@@ -1,4 +1,4 @@
-baseURL = "http://bearxx.cn/qixing"
+baseURL = "http://bearxx.cn/qixing/"
 // baseURL = "http://localhost:9091/"
 
 var freeUrls = ["/","index.html","login.html","resetpassword.html"];
