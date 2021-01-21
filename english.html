@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English</title>
+    <script src="./js/global/global.js"></script>
+    <script src="./js/third/vue/vue.js"></script>
+    <script src="./js/third/vue/vue-resource.min.js"></script>
+    <script src="./js/third/layer_mobile/layer.js"></script>
+    <script src="./js/self/util/util.js"></script>
+    <style>
+        *{margin: 0;padding: 0;}
+        ul,li{list-style:none}
+        .save{
+            display: inline-block;
+            position: relative;
+            float: left;
+            width: 360px;
+            height: 660px;
+            border: 1px solid red;
+            margin-top: 50px;
+            margin-left: 20px;
+            border-radius: 10px;
+        }
+        .save .items{
+            width: 90%;
+            margin-left: 20px;
+            margin-top: 20px;        
+        }        
+        .save .items span{
+            display: inline-block;
+            width: 100px;
+            font-size: 24px;
+            color: #333;
+            font-weight: bolder;
+        }
+        .save .items .txt{
+            display: inline-block;
+            width: 200px;
+            height: 25px;
+            font-size: 18px;
+            color: #333;
+            font-weight: bolder;
+        }
+        .save .items .select{
+            margin-left: -4px;
+            width: 204px;
+        }
+        .save .items .txtarea{
+            height: 100px;
+            margin-top: 20px;
+        }
+        .save .btns{
+            width: 200px;
+            margin: 20px auto;
+        }
+        .save .btn{
+            width: 80px;
+            height: 45px;
+            border-radius: 8px;
+            font-size: 24px;
+            display: inline-block;  
+            text-align: center;       
+            line-height: 45px;   
+            color: white;
+        }
+        .save .btn:hover{
+            cursor: pointer;
+            color: skyblue;
+        }
+        .save .save-btn{
+            background-color: chocolate;
+        }
+        .save .clean-btn{
+            background-color:cornflowerblue;
+        }
+        .wordshow{
+            display: inline-block;
+            position: relative;
+            width: 700px;
+            height: 660px;
+            border: 1px solid rgb(11, 114, 25);
+            margin-top: 50px;
+            margin-left: 20px;
+            border-radius: 10px;
+        }
+        .wordshow .items{
+            width: 90%;
+            margin: 20px auto;
+            font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;
+        }    
+        .wordshow .items .word-card{
+            width: 90%;
+            max-height: 540px;
+            border: 1px solid #aaa;
+            display: inline-block;
+            margin: 10px;
+            padding: 5px;
+            border-radius: 10px;
+            position: relative;
+        }
+        .wordshow .items .word-card span{
+            display: block;
+        }
+        .wordshow .items .word-card span.word{
+            font-size: 20px;
+            font-weight: bold;
+            color: green;
+            display: inline-block;
+            width: 150px;
+            height: 30px;
+            font-family: Metropolis,sans-serif;
+        }
+        .wordshow .items .word-card span.phonetic{
+            display: inline-block;
+        }
+        .wordshow .items .word-card span.groupName{
+            display: inline-block;
+            font-weight: bolder;
+            color: gray;
+            margin-left: 20px;
+        }
+        .wordshow .items .word-card span.groupName span{
+            display: inline-block;
+            opacity: 0.8;
+            font-size: 12px;
+        }
+        .wordshow .items .word-card span.trans{
+            font-size: 12px;
+            color: rgb(156, 54, 7);
+        }
+        .wordshow .items .word-card span.memory{
+            font-size: 16px;
+            color: rgb(37, 156, 7);
+            margin: 10px 0;
+        }
+        .wordshow .items .word-card span.demo{
+            border: 1px solid rgb(151, 140, 140);
+            max-height: 74px;
+            overflow-y: auto;
+            border-radius: 10px;
+            padding: 10px;
+            font-family: monospace;
+            color: gray;
+            font-size: 12px;
+        }
+        .wordshow .items .word-card .op{
+          float: right;
+          position: absolute;
+          top: 10px;
+          right: 20px;
+        }
+        .wordshow .items .word-card .op .btn{
+            width: 40px;
+            height: 30px;
+            display: inline-block;            
+        }
+        .wordshow .items .word-card .op .btn:hover{
+            cursor: pointer;
+        }
+        .wordshow .items .word-card .op .btn.edit{
+            color: cornflowerblue;
+        }
+        .wordshow .items .word-card .op .btn.del{
+            color: red;
+        }
+        .wordshow .page{
+            position: absolute;
+            bottom: 10px;
+            width: 200px;
+            height: 40px;
+            left: 50%;
+            margin-left: -100px;
+        }
+        .wordshow .page .btn{
+            width: 60px;
+            height: 40px;
+            display: inline-block;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: chocolate;
+        }
+        .wordshow .page .btn:hover{
+            cursor: pointer;
+        }
+        .wordshow .condition{
+            width: 90%;
+            height: 40px;
+            margin: 0 auto;
+        }
+        .wordshow .condition .group{
+            margin-left: 20px;
+        }
+        .wordshow .condition .group li{
+            display: inline-block;
+            padding: 5px 10px;
+            color: #999;
+        }
+        .wordshow .condition .group li:hover{
+            color: darkolivegreen;
+            cursor: pointer;
+            font-weight: bolder;
+        }
+        .wordshow .condition .group span{
+            font-size: 14px;
+            color: gray;
+            font-weight: 600;
+        }
+        .selection_on{
+            color: red !important;
+            font-weight: bolder;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 左边编辑框 开始 -->
+        <div class="save">
+            <ul class="items">
+                <li><span>分组</span>
+                    <select class="txt select" v-model="word.groupId">
+                        <option value="0">无</option>
+                        <option v-for="wordGroup in wordGroups" class="" style="width:50px;height:30px" :value="wordGroup.id">{{wordGroup.name}}</option>
+                    </select>
+                </li>
+                <li><span>英文</span><input type="text" class="txt" v-model="word.word"></li>
+                <li><span>音标</span><input type="text" class="txt" v-model="word.phonetic"></li>
+                <li><span>中文</span><input type="text" class="txt" v-model="word.trans"></li>
+                <li><span>记忆</span><input type="text" class="txt" v-model="word.memory"></li>
+                <li><span>例句</span><textarea type="text" class="txt txtarea" v-model="word.demo"></textarea> </li>
+            </ul>
+            <div class="btns">
+                <div class="save-btn btn" @click="save">
+                    保存
+                </div>
+                <div class="clean-btn btn" @click="clean">
+                    清空
+                </div>
+            </div>
+        </div>
+        <!-- 左边编辑框 结束 -->
+        <!-- 右边展示框 开始 -->
+        <div class="wordshow">
+            <div class="condition">
+                <ul class="group">
+                    <span>选择分组:</span>
+                    <li :class="page.wordGroupId == null ? 'selection_on' : ''" @click="search(null)">不限</li>
+                    <li v-for="wordGroup,idx in wordGroups" :value="wordGroup.id" :class="page.wordGroupId == wordGroup.id ? 'selection_on' : ''" @click="search(wordGroup.id)">{{wordGroup.name}}</li>
+                </ul>
+            </div>
+            <ul class="items">
+                <div class="word-card" v-for="word in words">
+                    <span class="word">{{word.word}}</span>
+                    <span class="phonetic">{{word.phonetic}}</span>
+                    <span class="groupName"><span>分组:</span>{{word.groupName}}</span>
+                    <span class="trans">{{word.trans}}</span>
+                    <span class="memory">{{word.memory}}</span>
+                    <span class="demo">{{word.demo}}</span>
+                    <div class="op">
+                        <div class="edit btn" @click="edit(word)">编辑</div>
+                        <div class="del btn" @click="del(word)">删除</div>
+                    </div>
+                </div>
+            </ul>
+            <div class="page">
+                <div class="btn" @Click="listByPage('prev')">上一页</div>
+                {{page.current}}/{{page.pages}}(共{{page.total}})
+                <div class="btn" @Click="listByPage('next')">下一页</div>
+            </div>
+        </div>
+        <!-- 右边展示框 结束 -->
+    </div>
+    <script>
+        var word = {
+            id: null,
+            groupId : null,
+            groupName:"生活",
+            trans: "",
+            demo: "",
+            english: "",                
+            memory: "",
+            phonetic: ""
+        }
+        var wordGroup = {
+            id: null,
+            name: null,
+        }
+        var vue = new Vue({
+            el:"#app",
+            data:{
+                word:word,
+                page:null,
+                words:[],
+                wordGroupPage:null,
+                wordGroups:[],
+            },
+            created(){
+                this.search(null);
+
+                this.wordGroupPage = Page.of();
+                Page.resumePage(this.wordGroupPage,1000);                                    
+                this.queryWordGroups();
+            },
+            methods:{
+                save:function(){
+                    console.log(this.word)
+                    this.$http.post(baseURL+'word/save',this.word)
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            Pop.tip('保存成功');
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                },
+                clean:function(){
+                    this.word.id = null;
+                    this.word.groupId = null;
+                    this.word.groupName = null;
+                    this.word.trans = "";
+                    this.word.demo= "";
+                    this.word.word="";                
+                    this.word.memory="";
+                    this.word.phonetic="";
+                },
+                search:function(groupId){
+                    this.page = Page.of();
+                    this.page.wordGroupId = groupId;
+                    Page.resumePage(this.page,3);                                                                                 
+                    this.listByPage();                   
+                },
+                listByPage:function(direction){
+                    if (direction == 'prev'){
+                        Page.prev(this.page,baseURL+'word/listByPage',this.words,true,function(){
+                            Pop.tip("There`s no more words.")
+                        });
+                    } else {
+                        Page.next(this.page,baseURL+'word/listByPage',this.words,true,function(){
+                            Pop.tip("There`s no more words.")
+                        });
+                    }
+                     
+                },
+                edit:function(word){
+                    this.word = word
+                    this.save();
+                },
+                del:function(word){
+                    //询问框
+                    layer.open({
+                        content: '您确定要删除【'+word.word+'】吗？'
+                        ,style: 'width:300px;height:180px;'
+                        ,btn: ['确定', '取消']
+                        ,yes: function(index){
+                            Vue.http.post(baseURL+'word/realDel',{id:word.id}).then(function (data) {
+                                Response.httpRespHandle(data,(bizData)=>{ 
+                                    location.reload();
+                                },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                            })
+                            layer.close(index);
+                        }
+                    });
+                },
+                queryWordGroups:function(){
+                    Page.next(this.wordGroupPage,baseURL+'wordgroup/listByPage',this.wordGroups,true,function(){
+                            Pop.tip("There`s no more wordsGroups.")
+                    });
+                }
+            }
+
+        });
+    </script>
+</body>
+</html>
