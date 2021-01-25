@@ -225,7 +225,7 @@
                         <option v-for="wordGroup in wordGroups" class="" style="width:50px;height:30px" :value="wordGroup.id">{{wordGroup.name}}</option>
                     </select>
                 </li>
-                <li><span>英文</span><input type="text" class="txt" v-model="word.word"></li>
+                <li><span>英文</span><input type="text" class="txt" v-model="word.word" v-on:input="findWord()"></li>
                 <li><span>音标</span><input type="text" class="txt" v-model="word.phonetic"></li>
                 <li><span>中文</span><input type="text" class="txt" v-model="word.trans"></li>
                 <li><span>记忆</span><input type="text" class="txt" v-model="word.memory"></li>
@@ -238,6 +238,12 @@
                 <div class="clean-btn btn" @click="clean">
                     清空
                 </div>
+            </div>
+            <div class="findword">
+                <div class="words" v-for="w in findwords">
+                    <p @click="spider(w)">{{w}}</p>
+                </div>
+                
             </div>
         </div>
         <!-- 左边编辑框 结束 -->
@@ -279,7 +285,7 @@
             groupName:"生活",
             trans: "",
             demo: "",
-            english: "",                
+            word: "",                
             memory: "",
             phonetic: ""
         }
@@ -295,6 +301,7 @@
                 words:[],
                 wordGroupPage:null,
                 wordGroups:[],
+                findwords:[]
             },
             created(){
                 this.search(null);
@@ -365,6 +372,31 @@
                     Page.next(this.wordGroupPage,baseURL+'wordgroup/listByPage',this.wordGroups,true,function(){
                             Pop.tip("There`s no more wordsGroups.")
                     });
+                },
+                findWord:function(){
+                    if ("" == this.word.word.trim()){
+                        return;
+                    }
+                    this.$http.get(baseURL+'word/find?word='+this.word.word)
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            vue.findwords = bizData;
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                },
+                spider:function(word){
+                    
+                    // var url = "https://bdc2.youzack.com/Recitation/Home/FindWord";
+                    // this.$http.post(url,{"wordToSearch":word})
+                    // .then(function (data) {
+                    //     console.log(data)
+                    // })
+
+                    this.$http.get(baseURL+"word/spider?word="+word)
+                    .then(function (data) {
+                        console.log(data)
+                   
+                    })
                 }
             }
 
