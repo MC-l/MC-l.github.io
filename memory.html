@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English</title>
+    <script src="./js/global/global.js"></script>
+    <script src="./js/third/vue/vue.js"></script>
+    <script src="./js/third/vue/vue-resource.min.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="./js/third/layer_mobile/layer.js"></script>
+    <script src="./js/self/util/util.js"></script>
+    <link rel="stylesheet" href="./js/third/element-ui/theme-chalk/index.css">
+    <style>
+        *{margin: 0;padding: 0;}
+        ul,li{list-style:none}
+
+        #app{
+            margin: 20px;
+        }
+        .palace,.palaceNodeArea{
+            display: inline-block;
+            position: relative;
+        }
+        .funcarea,.palaceList{
+            border: 1px solid rgb(145, 143, 143);            
+            text-align: center;
+            width: fit-content;            
+        }
+        .funcarea .name{
+            width: 200px;
+            height: 40px;
+            display: block;
+            margin: 20px;
+            text-align: center;
+            font-size: 20px;
+        }
+        .newPalace{
+            width: 100px;
+            height: 60px;            
+            color: white;
+            margin: 20px;
+            display: inline-block;
+            line-height: 60px;
+            border-radius: 5px;
+        }
+        .newPalace {
+            background-color: chocolate;
+        }
+        .newPalace:hover{
+            cursor: pointer;
+            font-weight: bolder;
+            box-shadow: 3px 3px 3px red;
+        }
+        .palaceList{
+            margin-top: 20px;
+            min-width: 246px;
+            min-height: 100px;
+        }
+        .palaceList .palaceItem{
+            text-align: right;
+            padding-right: 10px;
+            line-height: 30px;
+            font-size: 18px;
+            color: rgb(65, 63, 63);
+            border-bottom: 1px solid gray;
+        }
+        .palaceList .palaceItem:hover{
+            cursor: pointer;
+            color: rgb(177, 30, 30);
+        }
+        .palaceNodeArea{
+            min-width: 300px;
+            margin-left: 30px;
+            border: 1px solid gray;
+        }
+
+        .custom-tree-node {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            padding-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="palace">
+            <div class="funcarea">
+                <input type="text" class="name" placeholder="name" v-model="palaceForm.name">
+                <div class="newPalace" @click="newPalace()">New Palace</div>
+            </div>
+            <div class="palaceList">
+                <div class="palaceItem" v-for="palace in palaces" @click="loadPalaceTree(palace.id)">{{palace.name}}({{palace.nodeCount}})</div>
+            </div>
+        </div>
+        <div class="palaceNodeArea">
+            <el-tree :data="tree" :props="defaultProps" node-key="id" :expand-on-click-node="false" default-expand-all>
+                <span class="custom-tree-node" slot-scope="{ node, data }">
+                    <span>{{ node.label }}</span>
+                    <span>
+                      <el-button type="text" size="mini" @click="() => before(node,data)">Before</el-button>
+                      <el-button type="text" size="mini" @click="() => after(node,data)">After</el-button>
+                      <el-button type="text" size="mini" @click="() => fork(node,data)">Fork</el-button>
+                      <el-button type="text" size="mini" @click="() => del(node,data)">Del</el-button>                      
+                    </span>
+                  </span>
+            </el-tree>
+        </div>
+    </div>
+    <script>
+
+        var Main = {
+            data() {
+                return {
+                    palaceForm:{
+                        name:""
+                    },
+                    palaces:[],
+                    palaceNode:{
+                        "id": 0,
+                        "name": "",
+                        "palaceId": 0,
+                        "parentId": 0,
+                        "preSiblingId": 0
+                    },
+                    tree:[],
+                    defaultProps: {
+                        children: 'children',
+                        label: 'name'
+                    }
+                };
+            },
+            created(){
+                this.loadPalace();
+            },
+            methods: {
+
+                before(node,data) {
+                    var id = Math.random();
+                    const newChild = { id: id, name: "节点", children: [] };
+
+                    const parent = node.parent;
+                    const children = parent.data.children || parent.data;
+                    const index = children.findIndex(d => d.id === data.id);
+                    console.log(index)
+                    children.splice(index,0,newChild);   
+                    // 保存数据到服务器                 
+                    this.savePalaceNode({
+                        "name": newChild.name,
+                        "palaceId": data.palaceId,
+                        "parentId": data.parentId,
+                        "preSiblingId": data.preSiblingId
+                    });
+                },
+
+                after(node,data) {
+                    var id = Math.random();
+                    const newChild = { id: id, name: "节点", children: [] };
+
+                    const parent = node.parent;
+                    const children = parent.data.children || parent.data;
+                    const index = children.findIndex(d => d.id === data.id);
+                    children.splice(index+1, 0,newChild);
+
+                    // 保存数据到服务器     
+                    var param = {
+                        "name": newChild.name,
+                        "palaceId": data.palaceId,
+                        "parentId": data.parentId,
+                        "preSiblingId": data.id
+                    }
+                          
+                    this.savePalaceNode(param);
+                },
+
+                fork(node,data) {
+                    var id = Math.random();
+                    const newChild = { id: id, name: "节点", children: [] };
+                    if (!data.children) {
+                        this.$set(data, 'children', []);
+                    }
+                    data.children.push(newChild);
+                },
+                del(node, data) {
+                    const parent = node.parent;
+                    const children = parent.data.children || parent.data;
+                    const index = children.findIndex(d => d.id === data.id);
+                    children.splice(index, 1);
+
+                    // 删除服务器数据
+                    this.$http.post(baseURL+'palace/delPalaceNode',{id:data.id})
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            Pop.tip('删除成功');
+                            // this.loadPalaceTree(newNode.palaceId)
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                },
+
+                //////////////////////////////
+                newPalace:function(){
+                    this.$http.post(baseURL+'palace/savePalace',this.palaceForm)
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            Pop.tip('保存成功');
+                            this.palaceForm.name = ""
+                            this.loadPalace()
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                    
+                },
+                loadPalace:function(){
+                    this.$http.get(baseURL+'palace/listPalaceWithoutNodes')
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            this.palaces = bizData
+                            this.loadPalaceTree(bizData[0].id)
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                },
+                loadPalaceTree:function(palaceId){
+                    this.tree = []; // Clean before load
+                    this.$http.get(baseURL+'palace/loadPalaceTree?palaceId='+palaceId)
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            if(bizData === undefined || bizData === null){
+                                this.tree = [];
+                                Pop.tip("没数据");
+                                return;
+                            }
+                            console.log(bizData)
+                            this.tree.push(bizData)
+
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                },
+                savePalaceNode:function(newNode){
+                    console.log("请求参数:",newNode)
+                    this.$http.post(baseURL+'palace/savePalaceNode',newNode)
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            Pop.tip('保存成功');
+                            this.loadPalaceTree(newNode.palaceId)
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                },
+            }
+        };
+        var Ctor = Vue.extend(Main)
+        new Ctor().$mount('#app')
+    </script>
+</body>
+</html>
