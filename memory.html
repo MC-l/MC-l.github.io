@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English</title>
+    <title>Memory</title>
     <script src="./js/global/global.js"></script>
     <script src="./js/third/vue/vue.js"></script>
     <script src="./js/third/vue/vue-resource.min.js"></script>
@@ -14,13 +14,23 @@
     <style>
         *{margin: 0;padding: 0;}
         ul,li{list-style:none}
-
+        .hd{display: none;}
+        /** 自定义树结构样式**/
+        .custom-tree-node {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            padding-right: 8px;
+        }
         #app{
             margin: 20px;
         }
         .palace,.palaceNodeArea{
             display: inline-block;
             position: relative;
+            float: left;
         }
         .funcarea,.palaceList{
             border: 1px solid rgb(145, 143, 143);            
@@ -35,7 +45,7 @@
             text-align: center;
             font-size: 20px;
         }
-        .newPalace{
+        .savePalace{
             width: 100px;
             height: 60px;            
             color: white;
@@ -43,11 +53,9 @@
             display: inline-block;
             line-height: 60px;
             border-radius: 5px;
-        }
-        .newPalace {
             background-color: chocolate;
         }
-        .newPalace:hover{
+        .savePalace:hover{
             cursor: pointer;
             font-weight: bolder;
             box-shadow: 3px 3px 3px red;
@@ -68,20 +76,106 @@
         .palaceList .palaceItem:hover{
             cursor: pointer;
             color: rgb(177, 30, 30);
+            
+        }
+        .palaceItemOn{
+            color: rgb(177, 30, 30) !important;
+        }
+        .palaceItem .op{
+            color: rgb(20, 123, 220);
+            display: inline-block;
+            border-left: 1px solid gray;
+            font-size: 14px;
+            text-align: center;
+            padding-left: 5px;
         }
         .palaceNodeArea{
             min-width: 300px;
             margin-left: 30px;
             border: 1px solid gray;
         }
+        .palaceNodeArea .newRootNode .name{
+            width: 200px;
+            height: 40px;
+            display: block;
+            margin: 20px;
+            text-align: center;
+            font-size: 20px;
+        }
+        .palaceNodeArea .newRootNode .btn{
+            width: 100px;
+            height: 60px;            
+            color: white;
+            margin-left: 20px;
+            display: inline-block;
+            line-height: 60px;
+            border-radius: 5px;
+            background-color: chocolate;
+            text-align: center;
+        }
+        .palaceNodeArea .newRootNode .btn:hover{
+            cursor: pointer;
+            font-weight: bolder;
+            box-shadow: 3px 3px 3px red;
+        }
+        .memory{
+            float: left;
+            margin-left: 30px;
+        }
+        .memory .funcarea,.memoryList{
+            border: 1px solid rgb(145, 143, 143);            
+            text-align: center;
+            width: fit-content;            
+        }
+        .memory .funcarea .name{
+            width: 200px;
+            height: 40px;
+            display: block;
+            margin: 20px;
+            text-align: center;
+            font-size: 20px;
+        }
+        .saveMemory{
+            width: 100px;
+            height: 60px;            
+            color: white;
+            margin: 20px;
+            display: inline-block;
+            line-height: 60px;
+            border-radius: 5px;
+            background-color: rgb(30, 153, 210);
+        }
+        .saveMemory:hover{
+            cursor: pointer;
+            font-weight: bolder;
+            box-shadow: 3px 3px 3px rgb(30, 153, 210);
+        }
 
-        .custom-tree-node {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        .memoryList{
+            margin-top: 20px;
+            min-width: 246px;
+            min-height: 100px;
+        }
+        .memoryList .memoryItem{
+            text-align: right;
+            padding-right: 10px;
+            line-height: 30px;
+            font-size: 18px;
+            color: rgb(65, 63, 63);
+            border-bottom: 1px solid gray;
+        }
+        .memoryList .memoryItem:hover{
+            cursor: pointer;
+            color: rgb(177, 30, 30);
+            
+        }
+        .memoryItem .op{
+            color: rgb(20, 123, 220);
+            display: inline-block;
+            border-left: 1px solid gray;
             font-size: 14px;
-            padding-right: 8px;
+            text-align: center;
+            padding-left: 5px;
         }
     </style>
 </head>
@@ -90,22 +184,72 @@
         <div class="palace">
             <div class="funcarea">
                 <input type="text" class="name" placeholder="name" v-model="palaceForm.name">
-                <div class="newPalace" @click="newPalace()">New Palace</div>
+                <div class="savePalace" @click="savePalace()">New Palace</div>
             </div>
-            <div class="palaceList">
-                <div class="palaceItem" v-for="palace in palaces" @click="loadPalaceTree(palace.id)">{{palace.name}}({{palace.nodeCount}})</div>
+            
+            <div class="palaceList" >
+                <div class="palaceItem" :class=" palace.id === currentClickPalaceId ? 'palaceItemOn':''" v-for="palace in palaces" >
+                    <span  @dblclick="editPalace(palace,$event)" @keydown.enter="savePalaceAfterEdit(palace, $event)">{{palace.name}}</span>
+                    <span>({{palace.nodeCount}})</span>
+                    <span class="op" @click="loadPalaceTree(palace.id)">Info</span>
+                    <span class="op" @click="loadMemory(palace.id)">Memory</span>
+                    <span class="op" @click="delPalace(palace.id)">Del</span>
+                </div>
             </div>
         </div>
         <div class="palaceNodeArea">
+            <div class="newRootNode" :class="this.tree.length == 0 ? '' : 'hd'">
+                <input type="text" class="name" placeholder="name" v-model="palaceForm.rootName">
+                <div class="btn" @click="newRootNode()">Create Root Node</div>
+            </div>
             <el-tree :data="tree" :props="defaultProps" node-key="id" :expand-on-click-node="false" default-expand-all>
                 <span class="custom-tree-node" slot-scope="{ node, data }">
-                    <span>{{ node.label }}</span>
                     <span>
+                        <span v-if="data.sequence != null">{{ data.sequence }}-</span>
+                        <span style="text-align: left;" @dblclick="editPalaceNode(node,data,$event)" @keydown.enter="savePalaceNodeAfterEdit(node,data, $event)">{{node.label }}</span>
+                    </span>
+                    <span  :class="data.palaceId == null ? 'hd' : ''">
                       <el-button type="text" size="mini" @click="() => before(node,data)">Before</el-button>
                       <el-button type="text" size="mini" @click="() => after(node,data)">After</el-button>
                       <el-button type="text" size="mini" @click="() => fork(node,data)">Fork</el-button>
                       <el-button type="text" size="mini" @click="() => del(node,data)">Del</el-button>                      
                     </span>
+                  </span>
+            </el-tree>
+        </div>
+        <div class="memory">
+            <div class="funcarea">
+                <input type="text" class="name" placeholder="subject" v-model="memoryForm.subject">
+                <textarea type="text" class="name" placeholder="description" v-model="memoryForm.description"></textarea>
+                <div class="saveMemory" @click="saveMemory()">New Memory</div>
+            </div>
+            
+            <div class="memoryList" >
+                <div class="memoryItem" v-for="memory in memories" >
+                    <span  @dblclick="editMemory(memory,$event)" @keydown.enter="saveMemoryAfterEdit(memory, $event)">{{memory.subject}}</span>
+                    <span class="op" @click="loadPalaceTree(memory.id)">Info</span>
+                    <span class="op" @click="delPalace(memory.id)">Del</span>
+                </div>
+            </div>
+
+        </div>
+        <div class="palaceNodeArea">
+            <div class="newRootNode" :class="this.tree.length == 0 ? '' : 'hd'">
+                <input type="text" class="name" placeholder="name" v-model="palaceForm.rootName">
+                <div class="btn" @click="newRootNode()">Create Root Node</div>
+            </div>
+            <el-tree :data="tree" :props="defaultProps" node-key="id" :expand-on-click-node="false" default-expand-all>
+                <span class="custom-tree-node" slot-scope="{ node, data }">
+                    <span>
+                        <span v-if="data.sequence != null">{{ data.sequence }}-</span>
+                        <span style="text-align: left;" @dblclick="editPalaceNode(node,data,$event)" @keydown.enter="savePalaceNodeAfterEdit(node,data, $event)">{{node.label }}</span>
+                        <span>线程逃逸</span>
+                        <span>线程逃逸说的是当前方法中的对象外泄到别的线程中去了</span>
+                    </span>
+                    
+                    <!-- <span  :class="data.palaceId == null ? 'hd' : ''">
+                      <el-button type="text" size="mini" @click="() => selectAddMemoryNode(node,data)">AddMemroyNode</el-button>                      
+                    </span> -->
                   </span>
             </el-tree>
         </div>
@@ -115,13 +259,23 @@
         var Main = {
             data() {
                 return {
-                    palaceForm:{
-                        name:""
+                    memoryForm:{
+                        palaceId:null
+                        ,subject:""
+                        ,description:""
                     },
+                    memories:[],
+                    palaceForm:{
+                        id:null
+                        ,name:""
+                        ,rootName:""
+                    },
+                    currentClickPalaceId:null,
                     palaces:[],
                     palaceNode:{
                         "id": 0,
                         "name": "",
+                        "sequence": 0,
                         "palaceId": 0,
                         "parentId": 0,
                         "preSiblingId": 0
@@ -137,19 +291,31 @@
                 this.loadPalace();
             },
             methods: {
-
+                // 关于记忆的相关方法 --- start
+                loadMemory(palaceId){
+                    this.$http.get(baseURL+'memory/listMemoryByPalaceId?palaceId='+palaceId)
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            this.memories = bizData
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                },
+                saveMemory(palaceId){
+                    this.memoryForm.palaceId = this.currentClickPalaceId;
+                    this.$http.post(baseURL+'memory/saveMemory',this.memoryForm)
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            Pop.tip('添加成功');
+                            this.loadMemory(this.memoryForm.palaceId);
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                },
+                // 关于记忆的相关方法 --- end
+                // 记忆桩相关方法 --- start
                 before(node,data) {
-                    var id = Math.random();
-                    const newChild = { id: id, name: "节点", children: [] };
-
-                    const parent = node.parent;
-                    const children = parent.data.children || parent.data;
-                    const index = children.findIndex(d => d.id === data.id);
-                    console.log(index)
-                    children.splice(index,0,newChild);   
                     // 保存数据到服务器                 
                     this.savePalaceNode({
-                        "name": newChild.name,
+                        "name": "节点",
                         "palaceId": data.palaceId,
                         "parentId": data.parentId,
                         "preSiblingId": data.preSiblingId
@@ -157,17 +323,9 @@
                 },
 
                 after(node,data) {
-                    var id = Math.random();
-                    const newChild = { id: id, name: "节点", children: [] };
-
-                    const parent = node.parent;
-                    const children = parent.data.children || parent.data;
-                    const index = children.findIndex(d => d.id === data.id);
-                    children.splice(index+1, 0,newChild);
-
                     // 保存数据到服务器     
                     var param = {
-                        "name": newChild.name,
+                        "name": "节点",
                         "palaceId": data.palaceId,
                         "parentId": data.parentId,
                         "preSiblingId": data.id
@@ -177,12 +335,20 @@
                 },
 
                 fork(node,data) {
-                    var id = Math.random();
-                    const newChild = { id: id, name: "节点", children: [] };
-                    if (!data.children) {
-                        this.$set(data, 'children', []);
+                    // 保存数据到服务器     
+                    var lastOne = data.children[data.children.length-1];
+                    var preSiblingId = null;
+                    if (lastOne != undefined){
+                        preSiblingId = lastOne.id;
                     }
-                    data.children.push(newChild);
+                    var param = {
+                        "name": "节点",
+                        "palaceId": data.palaceId,
+                        "parentId": data.id,
+                        "preSiblingId": preSiblingId
+                    }
+                          
+                    this.savePalaceNode(param);
                 },
                 del(node, data) {
                     const parent = node.parent;
@@ -199,36 +365,76 @@
                         },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
                     })
                 },
-
-                //////////////////////////////
-                newPalace:function(){
-                    this.$http.post(baseURL+'palace/savePalace',this.palaceForm)
+                editPalaceNode(node,data,event){
+                    if (data.palaceId != null){ // 记忆宫殿名作为顶点,不能被修改
+                        event.target.setAttribute('contenteditable', true);
+                    }
+                },
+                savePalaceNodeAfterEdit(node,data,event){
+                    console.log(event.target.innerHTML)
+                    event.target.setAttribute('contenteditable', false);
+                    this.savePalaceNode({
+                        "id":data.id,
+                        "name": event.target.innerHTML.trim(),
+                        "palaceId": data.palaceId,
+                        "parentId": data.parentId,
+                        "preSiblingId": data.preSiblingId
+                    });
+                },
+                // 记忆桩相关方法 --- end
+                editPalace(palace,event){
+                    event.target.setAttribute('contenteditable', true);
+                },
+                savePalaceAfterEdit(palace,event){
+                    event.target.setAttribute('contenteditable', false);
+                    this._savePalace({
+                        id:palace.id,
+                        name: event.target.innerHTML.trim()
+                    });
+                },
+                
+                _savePalace:function(palace,successCB){
+                    this.$http.post(baseURL+'palace/savePalace',palace)
                     .then(function (data) {
                         Response.httpRespHandle(data,(bizData)=>{
                             Pop.tip('保存成功');
-                            this.palaceForm.name = ""
-                            this.loadPalace()
+                            if (successCB != null && successCB != undefined){
+                                successCB(bizData);
+                            }
                         },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
                     })
                     
+                },
+                savePalace:function(){
+
+                    this._savePalace(this.palaceForm,function(returnData){
+                        vue.palaceForm.name = ""
+                        vue.loadPalace()
+                    });
                 },
                 loadPalace:function(){
                     this.$http.get(baseURL+'palace/listPalaceWithoutNodes')
                     .then(function (data) {
                         Response.httpRespHandle(data,(bizData)=>{
                             this.palaces = bizData
-                            this.loadPalaceTree(bizData[0].id)
+                            if (bizData.length > 0){
+                                this.loadPalaceTree(bizData[0].id)
+                            }
                         },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
                     })
                 },
                 loadPalaceTree:function(palaceId){
                     this.tree = []; // Clean before load
+                    this.currentClickPalaceId = palaceId;
+                    if (palaceId == null || palaceId == undefined){
+                        return;
+                    }
                     this.$http.get(baseURL+'palace/loadPalaceTree?palaceId='+palaceId)
                     .then(function (data) {
                         Response.httpRespHandle(data,(bizData)=>{
                             if(bizData === undefined || bizData === null){
                                 this.tree = [];
-                                Pop.tip("没数据");
+                                // Pop.tip("没数据");
                                 return;
                             }
                             console.log(bizData)
@@ -237,20 +443,45 @@
                         },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
                     })
                 },
-                savePalaceNode:function(newNode){
-                    console.log("请求参数:",newNode)
+                savePalaceNode:function(newNode,successCB){
                     this.$http.post(baseURL+'palace/savePalaceNode',newNode)
                     .then(function (data) {
                         Response.httpRespHandle(data,(bizData)=>{
                             Pop.tip('保存成功');
                             this.loadPalaceTree(newNode.palaceId)
+                            if (successCB != null || successCB != undefined){
+                                successCB();
+                            }
                         },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
                     })
                 },
+                delPalace:function(palaceId){
+                    // console.log(palaceId)
+                    this.$http.post(baseURL+'palace/delPalace',{id:palaceId})
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            Pop.tip('删除成功');
+                            this.loadPalace()
+                            this.loadPalaceTree()
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                },
+                // 创建根节点
+                newRootNode:function(){
+                    // console.log(this.currentClickPalaceId)
+                    // 保存数据到服务器     
+                    var param = {
+                        "name": this.palaceForm.rootName,
+                        "palaceId": this.currentClickPalaceId
+                    }
+                    this.savePalaceNode(param);
+                    this.palaceForm.rootName = "";
+
+                }
             }
         };
         var Ctor = Vue.extend(Main)
-        new Ctor().$mount('#app')
+        var vue = new Ctor().$mount('#app')
     </script>
 </body>
 </html>
