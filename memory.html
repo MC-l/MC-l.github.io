@@ -103,7 +103,7 @@
             font-size: 20px;
         }
         .palaceNodeArea .newRootNode .btn{
-            width: 100px;
+            min-width: 100px;
             height: 60px;            
             color: white;
             margin-left: 20px;
@@ -112,6 +112,7 @@
             border-radius: 5px;
             background-color: chocolate;
             text-align: center;
+            padding: 0 5px;
         }
         .palaceNodeArea .newRootNode .btn:hover{
             cursor: pointer;
@@ -225,31 +226,31 @@
             </div>
             
             <div class="memoryList" >
-                <div class="memoryItem" v-for="memory in memories" >
+                <div v-if="memories.length == 0" style="color: rgb(187, 187, 187);">暂无数据</div>
+                <div class="memoryItem" v-for="memory in memories" :class=" memory.id === currentClickMemoryId ? 'palaceItemOn':''">
                     <span  @dblclick="editMemory(memory,$event)" @keydown.enter="saveMemoryAfterEdit(memory, $event)">{{memory.subject}}</span>
-                    <span class="op" @click="loadPalaceTree(memory.id)">Info</span>
-                    <span class="op" @click="delPalace(memory.id)">Del</span>
+                    <span class="op" @click="listMemoryNodesByMemoryId(memory.id)" v-model="memoryForm.subject">Info</span>
+                    <span class="op" @click="delMemory(memory.id)">Del</span>
                 </div>
             </div>
 
         </div>
         <div class="palaceNodeArea">
-            <div class="newRootNode" :class="this.tree.length == 0 ? '' : 'hd'">
-                <input type="text" class="name" placeholder="name" v-model="palaceForm.rootName">
-                <div class="btn" @click="newRootNode()">Create Root Node</div>
-            </div>
-            <el-tree :data="tree" :props="defaultProps" node-key="id" :expand-on-click-node="false" default-expand-all>
-                <span class="custom-tree-node" slot-scope="{ node, data }">
-                    <span>
+            <el-tree :data="memoryTree" :props="defaultProps" node-key="id" :expand-on-click-node="false" default-expand-all>
+                <span class="custom-tree-node" slot-scope="{ node, data }" @dblclick="selectMemoryNodeToEdit(data)">
+                    <span >
                         <span v-if="data.sequence != null">{{ data.sequence }}-</span>
-                        <span style="text-align: left;" @dblclick="editPalaceNode(node,data,$event)" @keydown.enter="savePalaceNodeAfterEdit(node,data, $event)">{{node.label }}</span>
-                        <span>线程逃逸</span>
-                        <span>线程逃逸说的是当前方法中的对象外泄到别的线程中去了</span>
+                        <span style="text-align: left;" >{{data.name }}</span>
                     </span>
                     
-                    <!-- <span  :class="data.palaceId == null ? 'hd' : ''">
-                      <el-button type="text" size="mini" @click="() => selectAddMemoryNode(node,data)">AddMemroyNode</el-button>                      
-                    </span> -->
+                    <span :class="memoryNodeForm.currentClickMemoryNodeId == data.id ? 'hd' : ''">
+                        <span style="color:crimson">{{data.keyword}}</span>
+                        <span style="color:rgb(139, 136, 136);">{{data.description}}</span>
+                    </span>
+                    <span :class="memoryNodeForm.currentClickMemoryNodeId == data.id ? '' : 'hd'">
+                        <input type="text" style="color:crimson;width: 40%;margin-left: 40px;" :value="data.keyword" v-model="memoryNodeForm.keyword" @keydown.enter="saveMemoryNode(data.memoryNodeId)"></input>
+                        <input type="text" style="color:rgb(97, 96, 96);width: 40%;" :value="data.description" v-model="memoryNodeForm.description"  @keydown.enter="saveMemoryNode(data.memoryNodeId)"></input>
+                    </span>
                   </span>
             </el-tree>
         </div>
@@ -260,17 +261,30 @@
             data() {
                 return {
                     memoryForm:{
+                        id:null,
                         palaceId:null
                         ,subject:""
                         ,description:""
                     },
+                    memoryNodeForm:{
+                        id:null,
+                        memoryId:null,
+                        palaceNodeId:null,
+                        keyword:"",
+                        description:"",
+                        currentClickMemoryNodeId:null
+                    },
                     memories:[],
+                    memoryTree:[],
+                    memoryNodes:[],
+                    currentMemoryNodeMap:new Map(),
                     palaceForm:{
                         id:null
                         ,name:""
                         ,rootName:""
                     },
                     currentClickPalaceId:null,
+                    currentClickMemoryId:null,
                     palaces:[],
                     palaceNode:{
                         "id": 0,
@@ -279,7 +293,7 @@
                         "palaceId": 0,
                         "parentId": 0,
                         "preSiblingId": 0
-                    },
+                    },                    
                     tree:[],
                     defaultProps: {
                         children: 'children',
@@ -300,13 +314,91 @@
                         },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
                     })
                 },
-                saveMemory(palaceId){
+                listMemoryNodesByMemoryId(memoryId){
+                    this.memoryTree = [];
+                    this.currentClickMemoryId = memoryId;
+                    this.$http.get(baseURL+'memory/listMemoryNodesByMemoryId?memoryId='+memoryId)
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            this.memoryNodes = bizData
+                            currentMemoryNodeMap = new Map();
+                            for (var i=0; i<this.memoryNodes.length; i++) {
+                                currentMemoryNodeMap.set(this.memoryNodes[i].palaceNodeId,this.memoryNodes[i]);
+                            }
+
+                            // 构建树
+                            this.memoryTree = this.tree;
+                           
+                            var digui = function (tree){
+                                if (tree == null){
+                                    return;
+                                }
+                                var memNode = currentMemoryNodeMap.get(tree.id);
+                                if (memNode != null && memNode != undefined){
+                                    tree.keyword = memNode.keyword
+                                    tree.description = memNode.description
+                                    tree.memoryNodeId = memNode.id
+                                }
+                                if (tree.children != undefined && tree.children != null && tree.children.length > 0){
+                                    for (var i = 0; i<tree.children.length; i++){
+                                        digui(tree.children[i]);
+                                    }
+                                }
+                            }
+                            digui(this.memoryTree[0])
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                },
+                saveMemory(){
                     this.memoryForm.palaceId = this.currentClickPalaceId;
                     this.$http.post(baseURL+'memory/saveMemory',this.memoryForm)
                     .then(function (data) {
                         Response.httpRespHandle(data,(bizData)=>{
                             Pop.tip('添加成功');
                             this.loadMemory(this.memoryForm.palaceId);
+                            this.memoryForm = {
+                                id:null,
+                                palaceId:null
+                                ,subject:""
+                                ,description:""
+                            }
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                },
+                delMemory(memoryId){
+                    this.$http.post(baseURL+'memory/delMemory',{id:memoryId})
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            Pop.tip('删除成功');
+                            this.loadMemory(this.currentClickPalaceId)
+                            this.memoryTree = [];
+                        },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
+                    })
+                },
+                editMemory(memory,event){
+                    event.target.setAttribute('contenteditable', true);
+                },
+                saveMemoryAfterEdit(memory, $event){
+                    event.target.setAttribute('contenteditable', false);
+                    this.memoryForm.id = memory.id;
+                    this.memoryForm.subject = event.target.innerHTML.trim()
+                    this.saveMemory();
+                },
+                selectMemoryNodeToEdit(memoryNode){
+                    this.memoryNodeForm.keyword = memoryNode.keyword
+                    this.memoryNodeForm.description = memoryNode.description
+                    this.memoryNodeForm.palaceNodeId = memoryNode.id;
+                    this.memoryNodeForm.currentClickMemoryNodeId = memoryNode.id; // 显示编辑框
+                },
+                saveMemoryNode(memoryNodeId){
+                    this.memoryNodeForm.id = memoryNodeId;
+                    this.memoryNodeForm.memoryId = this.currentClickMemoryId;
+                    this.$http.post(baseURL+'memory/saveMemoryNode',this.memoryNodeForm)
+                    .then(function (data) {
+                        Response.httpRespHandle(data,(bizData)=>{
+                            Pop.tip('添加成功');
+                            this.listMemoryNodesByMemoryId(this.currentClickMemoryId);
+                            this.memoryNodeForm.currentClickMemoryNodeId = null
                         },(errMsg)=>{Pop.tip(errMsg)},(errMsg)=>{Pop.tip(errMsg)});
                     })
                 },
@@ -425,6 +517,7 @@
                 },
                 loadPalaceTree:function(palaceId){
                     this.tree = []; // Clean before load
+                    this.memoryTree = [];
                     this.currentClickPalaceId = palaceId;
                     if (palaceId == null || palaceId == undefined){
                         return;
